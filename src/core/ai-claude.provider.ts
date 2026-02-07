@@ -1,18 +1,29 @@
-import type { AiGenerateRequest, AiGenerateResponse, AiMessage, AiToolDefinition, AiProvider } from './ai-provider';
+import type {
+  AiGenerateRequest,
+  AiGenerateResponse,
+  AiMessage,
+  AiToolDefinition,
+  AiProvider,
+} from "./ai-provider";
 
 type ClaudeContentBlock =
-  | { type: 'text'; text: string }
-  | { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> }
-  | { type: 'tool_result'; tool_use_id: string; content: string };
+  | { type: "text"; text: string }
+  | {
+      type: "tool_use";
+      id: string;
+      name: string;
+      input: Record<string, unknown>;
+    }
+  | { type: "tool_result"; tool_use_id: string; content: string };
 
 type ClaudeMessage = {
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   content: ClaudeContentBlock[];
 };
 
 type ClaudeResponse = {
   content?: Array<{
-    type: 'text' | 'tool_use';
+    type: "text" | "tool_use";
     text?: string;
     id?: string;
     name?: string;
@@ -25,7 +36,7 @@ type ClaudeResponse = {
 export class ClaudeProvider implements AiProvider {
   constructor(
     private readonly apiKey: string,
-    private readonly model: string
+    private readonly model: string,
   ) {}
 
   /**
@@ -33,7 +44,7 @@ export class ClaudeProvider implements AiProvider {
    * @param request 生成リクエスト
    */
   async generate(request: AiGenerateRequest): Promise<AiGenerateResponse> {
-    const url = 'https://api.anthropic.com/v1/messages';
+    const url = "https://api.anthropic.com/v1/messages";
     const system = this.extractSystem(request.messages);
     const messages = this.toClaudeMessages(request.messages);
     const tools = request.tools ? this.toClaudeTools(request.tools) : undefined;
@@ -44,31 +55,31 @@ export class ClaudeProvider implements AiProvider {
       system,
       messages,
       tools,
-      tool_choice: tools?.length ? 'auto' : undefined
+      tool_choice: tools?.length ? "auto" : undefined,
     });
 
     const data = (await res.json()) as ClaudeResponse;
     const blocks = data.content ?? [];
     const toolCalls = blocks
-      .filter(block => block.type === 'tool_use')
-      .map(block => ({
+      .filter((block) => block.type === "tool_use")
+      .map((block) => ({
         id: block.id,
-        name: block.name ?? '',
-        arguments: block.input ?? {}
+        name: block.name ?? "",
+        arguments: block.input ?? {},
       }))
-      .filter(call => call.name);
+      .filter((call) => call.name);
 
-    if (toolCalls.length > 0 || data.stop_reason === 'tool_use') {
+    if (toolCalls.length > 0 || data.stop_reason === "tool_use") {
       return { toolCalls };
     }
 
     const text = blocks
-      .filter(block => block.type === 'text')
-      .map(block => block.text)
+      .filter((block) => block.type === "text")
+      .map((block) => block.text)
       .filter((value): value is string => Boolean(value))
-      .join('\n');
+      .join("\n");
 
-    return { content: text?.trim() || 'AIの応答が取得できませんでした。' };
+    return { content: text?.trim() || "AIの応答が取得できませんでした。" };
   }
 
   /**
@@ -78,12 +89,14 @@ export class ClaudeProvider implements AiProvider {
   private extractSystem(messages: AiMessage[]): string | undefined {
     const contents: string[] = [];
     for (const message of messages) {
-      if (message.role === 'system' && 'content' in message) {
+      if (message.role === "system" && "content" in message) {
         contents.push(message.content);
       }
     }
-    if (contents.length === 0) { return undefined; }
-    return contents.join('\n');
+    if (contents.length === 0) {
+      return undefined;
+    }
+    return contents.join("\n");
   }
 
   /**
@@ -94,40 +107,42 @@ export class ClaudeProvider implements AiProvider {
     const result: ClaudeMessage[] = [];
 
     messages.forEach((message, index) => {
-      if (message.role === 'system') { return; }
+      if (message.role === "system") {
+        return;
+      }
 
-      if (message.role === 'tool') {
+      if (message.role === "tool") {
         result.push({
-          role: 'user',
+          role: "user",
           content: [
             {
-              type: 'tool_result',
+              type: "tool_result",
               tool_use_id: message.toolCallId ?? `tool_${index}`,
-              content: JSON.stringify(message.content)
-            }
-          ]
+              content: JSON.stringify(message.content),
+            },
+          ],
         });
         return;
       }
 
-      if ('toolCall' in message) {
+      if ("toolCall" in message) {
         result.push({
-          role: 'assistant',
+          role: "assistant",
           content: [
             {
-              type: 'tool_use',
+              type: "tool_use",
               id: message.toolCall.id ?? `call_${index}`,
               name: message.toolCall.name,
-              input: message.toolCall.arguments
-            }
-          ]
+              input: message.toolCall.arguments,
+            },
+          ],
         });
         return;
       }
 
       result.push({
         role: message.role,
-        content: [{ type: 'text', text: message.content }]
+        content: [{ type: "text", text: message.content }],
       });
     });
 
@@ -138,13 +153,15 @@ export class ClaudeProvider implements AiProvider {
    * AIツール定義をClaude向けのtoolsに変換する。
    * @param tools AIツール定義
    */
-  private toClaudeTools(
-    tools: AiToolDefinition[]
-  ): Array<{ name: string; description: string; input_schema: AiToolDefinition['parameters'] }> {
-    return tools.map(tool => ({
+  private toClaudeTools(tools: AiToolDefinition[]): Array<{
+    name: string;
+    description: string;
+    input_schema: AiToolDefinition["parameters"];
+  }> {
+    return tools.map((tool) => ({
       name: tool.name,
       description: tool.description,
-      input_schema: tool.parameters
+      input_schema: tool.parameters,
     }));
   }
 
@@ -153,20 +170,23 @@ export class ClaudeProvider implements AiProvider {
    * @param url リクエストURL
    * @param body 送信するボディ
    */
-  private async requestWithRetry(url: string, body: Record<string, unknown>): Promise<Response> {
+  private async requestWithRetry(
+    url: string,
+    body: Record<string, unknown>,
+  ): Promise<Response> {
     const maxRetries = 3;
     const baseDelayMs = 500;
 
     for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
       try {
         const res = await fetch(url, {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': this.apiKey,
-            'anthropic-version': '2023-06-01'
+            "Content-Type": "application/json",
+            "x-api-key": this.apiKey,
+            "anthropic-version": "2023-06-01",
           },
-          body: JSON.stringify(body)
+          body: JSON.stringify(body),
         });
 
         if (res.ok) {
@@ -188,7 +208,7 @@ export class ClaudeProvider implements AiProvider {
       }
     }
 
-    throw new Error('ClaudeError:RetryFailed');
+    throw new Error("ClaudeError:RetryFailed");
   }
 
   /**
@@ -196,7 +216,13 @@ export class ClaudeProvider implements AiProvider {
    * @param status HTTPステータスコード
    */
   private shouldRetry(status: number): boolean {
-    return status === 429 || status === 500 || status === 502 || status === 503 || status === 504;
+    return (
+      status === 429 ||
+      status === 500 ||
+      status === 502 ||
+      status === 503 ||
+      status === 504
+    );
   }
 
   /**
@@ -204,6 +230,6 @@ export class ClaudeProvider implements AiProvider {
    * @param ms 待機時間(ms)
    */
   private sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }

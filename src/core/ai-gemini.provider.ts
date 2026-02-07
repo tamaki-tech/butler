@@ -1,19 +1,24 @@
-import type { AiProvider } from './ai-provider';
-import type { AiGenerateRequest, AiGenerateResponse, AiMessage, AiToolDefinition } from './ai-provider';
+import type { AiProvider } from "./ai-provider";
+import type {
+  AiGenerateRequest,
+  AiGenerateResponse,
+  AiMessage,
+  AiToolDefinition,
+} from "./ai-provider";
 
 type GeminiPart = {
   text?: string;
   functionCall?: { name: string; args?: Record<string, unknown> };
   functionResponse?: { name: string; response: Record<string, unknown> };
 };
-type GeminiContent = { role: 'user' | 'model' | 'tool'; parts: GeminiPart[] };
+type GeminiContent = { role: "user" | "model" | "tool"; parts: GeminiPart[] };
 
 type GeminiToolDeclaration = {
   name: string;
   description: string;
   parameters: {
-    type: 'object';
-    properties: Record<string, { type: 'string'; description?: string }>;
+    type: "object";
+    properties: Record<string, { type: "string"; description?: string }>;
     required?: string[];
   };
 };
@@ -28,7 +33,7 @@ type GeminiResponse = {
 export class GeminiProvider implements AiProvider {
   constructor(
     private readonly apiKey: string,
-    private readonly model: string
+    private readonly model: string,
   ) {}
 
   /**
@@ -37,11 +42,13 @@ export class GeminiProvider implements AiProvider {
    */
   async generate(request: AiGenerateRequest): Promise<AiGenerateResponse> {
     const url = [
-      'https://generativelanguage.googleapis.com/v1beta/models/',
-      `${this.model}:generateContent?key=${this.apiKey}`
-    ].join('');
+      "https://generativelanguage.googleapis.com/v1beta/models/",
+      `${this.model}:generateContent?key=${this.apiKey}`,
+    ].join("");
 
-    const contents = request.messages.map(message => this.toGeminiContent(message));
+    const contents = request.messages.map((message) =>
+      this.toGeminiContent(message),
+    );
     const tools = request.tools ? this.toGeminiTools(request.tools) : undefined;
 
     const res = await this.requestWithRetry(url, contents, tools);
@@ -49,19 +56,22 @@ export class GeminiProvider implements AiProvider {
     const data = (await res.json()) as GeminiResponse;
     const parts = data.candidates?.[0]?.content?.parts ?? [];
     const toolCalls = parts
-      .filter(part => part.functionCall)
-      .map(part => ({
-        name: part.functionCall?.name ?? '',
-        arguments: part.functionCall?.args ?? {}
+      .filter((part) => part.functionCall)
+      .map((part) => ({
+        name: part.functionCall?.name ?? "",
+        arguments: part.functionCall?.args ?? {},
       }))
-      .filter(call => call.name);
+      .filter((call) => call.name);
 
     if (toolCalls.length > 0) {
       return { toolCalls };
     }
 
-    const text = parts.map(part => part.text).filter(Boolean).join('\n');
-    return { content: text?.trim() || 'AIの応答が取得できませんでした。' };
+    const text = parts
+      .map((part) => part.text)
+      .filter(Boolean)
+      .join("\n");
+    return { content: text?.trim() || "AIの応答が取得できませんでした。" };
   }
 
   /**
@@ -72,7 +82,7 @@ export class GeminiProvider implements AiProvider {
   private async requestWithRetry(
     url: string,
     contents: GeminiContent[],
-    tools?: { functionDeclarations: GeminiToolDeclaration[] }[]
+    tools?: { functionDeclarations: GeminiToolDeclaration[] }[],
   ): Promise<Response> {
     const maxRetries = 3;
     const baseDelayMs = 500;
@@ -83,12 +93,14 @@ export class GeminiProvider implements AiProvider {
           contents: GeminiContent[];
           tools?: { functionDeclarations: GeminiToolDeclaration[] }[];
         } = { contents };
-        if (tools?.length) { body.tools = tools; }
+        if (tools?.length) {
+          body.tools = tools;
+        }
 
         const res = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
         });
 
         if (res.ok) {
@@ -110,7 +122,7 @@ export class GeminiProvider implements AiProvider {
       }
     }
 
-    throw new Error('GeminiError:RetryFailed');
+    throw new Error("GeminiError:RetryFailed");
   }
 
   /**
@@ -118,23 +130,37 @@ export class GeminiProvider implements AiProvider {
    * @param message AIメッセージ
    */
   private toGeminiContent(message: AiMessage): GeminiContent {
-    if (message.role === 'tool') {
+    if (message.role === "tool") {
       return {
-        role: 'tool',
-        parts: [{ functionResponse: { name: message.toolName, response: message.content } }]
+        role: "tool",
+        parts: [
+          {
+            functionResponse: {
+              name: message.toolName,
+              response: message.content,
+            },
+          },
+        ],
       };
     }
 
-    if ('toolCall' in message) {
+    if ("toolCall" in message) {
       return {
-        role: 'model',
-        parts: [{ functionCall: { name: message.toolCall.name, args: message.toolCall.arguments } }]
+        role: "model",
+        parts: [
+          {
+            functionCall: {
+              name: message.toolCall.name,
+              args: message.toolCall.arguments,
+            },
+          },
+        ],
       };
     }
 
     return {
-      role: message.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: message.content }]
+      role: message.role === "assistant" ? "model" : "user",
+      parts: [{ text: message.content }],
     };
   }
 
@@ -142,15 +168,17 @@ export class GeminiProvider implements AiProvider {
    * AIツール定義をGemini向けのtoolsに変換する。
    * @param tools AIツール定義
    */
-  private toGeminiTools(tools: AiToolDefinition[]): { functionDeclarations: GeminiToolDeclaration[] }[] {
+  private toGeminiTools(
+    tools: AiToolDefinition[],
+  ): { functionDeclarations: GeminiToolDeclaration[] }[] {
     return [
       {
-        functionDeclarations: tools.map(tool => ({
+        functionDeclarations: tools.map((tool) => ({
           name: tool.name,
           description: tool.description,
-          parameters: tool.parameters
-        }))
-      }
+          parameters: tool.parameters,
+        })),
+      },
     ];
   }
 
@@ -159,7 +187,13 @@ export class GeminiProvider implements AiProvider {
    * @param status HTTPステータスコード
    */
   private shouldRetry(status: number): boolean {
-    return status === 429 || status === 500 || status === 502 || status === 503 || status === 504;
+    return (
+      status === 429 ||
+      status === 500 ||
+      status === 502 ||
+      status === 503 ||
+      status === 504
+    );
   }
 
   /**
@@ -167,6 +201,6 @@ export class GeminiProvider implements AiProvider {
    * @param ms 待機時間(ms)
    */
   private sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }

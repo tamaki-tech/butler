@@ -1,14 +1,19 @@
-import { Client, GuildScheduledEvent, GuildScheduledEventStatus, TextChannel } from 'discord.js';
-import cron, { ScheduledTask } from 'node-cron';
-import { NOTIFY_TEXT_CHANNEL_ID } from '../../core/environment';
+import {
+  Client,
+  GuildScheduledEvent,
+  GuildScheduledEventStatus,
+  TextChannel,
+} from "discord.js";
+import cron, { ScheduledTask } from "node-cron";
+import { NOTIFY_TEXT_CHANNEL_ID } from "../../core/environment";
 import {
   BotMeta,
   ReminderTiming,
   parseBotMeta,
   updateDescriptionWithMeta,
-  stripBotMeta
-} from './bot-meta.model';
-import { getTriggeredTimings, TIMING_LABELS } from './reminder-timing.util';
+  stripBotMeta,
+} from "./bot-meta.model";
+import { getTriggeredTimings, TIMING_LABELS } from "./reminder-timing.util";
 
 /** イベントリマインドの定期チェックと通知を行うサービス。 */
 export class EventReminderService {
@@ -19,14 +24,18 @@ export class EventReminderService {
   /** サービスを開始する。 */
   run(): this {
     // 起動時に即座にチェック
-    this.checkReminders().catch(e => console.error('初回リマインドチェック失敗:', e));
+    this.checkReminders().catch((e) =>
+      console.error("初回リマインドチェック失敗:", e),
+    );
 
     // 5分毎に定期チェック
-    this.cronJob = cron.schedule('*/5 * * * *', () => {
-      this.checkReminders().catch(e => console.error('リマインドチェック失敗:', e));
+    this.cronJob = cron.schedule("*/5 * * * *", () => {
+      this.checkReminders().catch((e) =>
+        console.error("リマインドチェック失敗:", e),
+      );
     });
 
-    console.log('EventReminderService: 起動しました');
+    console.log("EventReminderService: 起動しました");
     return this;
   }
 
@@ -73,36 +82,39 @@ export class EventReminderService {
   private async sendReminder(
     event: GuildScheduledEvent,
     timing: ReminderTiming,
-    meta: BotMeta
+    meta: BotMeta,
   ): Promise<void> {
     const channel = this.getNotifyChannel();
     if (!channel) {
-      console.warn('通知チャンネルが見つかりません');
+      console.warn("通知チャンネルが見つかりません");
       return;
     }
 
-    const startTimeStr = event.scheduledStartAt?.toLocaleString('ja-JP', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    const startTimeStr = event.scheduledStartAt?.toLocaleString("ja-JP", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
 
     const userDescription = stripBotMeta(event.description);
-    const mentions = meta.participants.length > 0
-      ? meta.participants.map(id => `<@${id}>`).join(' ')
-      : '';
+    const mentions =
+      meta.participants.length > 0
+        ? meta.participants.map((id) => `<@${id}>`).join(" ")
+        : "";
 
     const message = [
       `:bell: **イベントリマインド (${TIMING_LABELS[timing]})**`,
       ``,
       `**${event.name}**`,
       `開始: ${startTimeStr}`,
-      userDescription ? `\n${userDescription}` : '',
+      userDescription ? `\n${userDescription}` : "",
       ``,
-      mentions
-    ].filter(line => line !== '').join('\n');
+      mentions,
+    ]
+      .filter((line) => line !== "")
+      .join("\n");
 
     try {
       await channel.send(message);
@@ -115,11 +127,11 @@ export class EventReminderService {
   /** イベントのdescriptionを更新してnotifiedフラグを保存する。 */
   private async updateEventMeta(
     event: GuildScheduledEvent,
-    meta: BotMeta
+    meta: BotMeta,
   ): Promise<void> {
     const newDescription = updateDescriptionWithMeta(
       stripBotMeta(event.description),
-      meta
+      meta,
     );
 
     try {
@@ -132,6 +144,8 @@ export class EventReminderService {
   /** 通知チャンネルを取得する。 */
   private getNotifyChannel(): TextChannel | undefined {
     if (!NOTIFY_TEXT_CHANNEL_ID) return undefined;
-    return this.client.channels.cache.get(NOTIFY_TEXT_CHANNEL_ID) as TextChannel | undefined;
+    return this.client.channels.cache.get(NOTIFY_TEXT_CHANNEL_ID) as
+      | TextChannel
+      | undefined;
   }
 }

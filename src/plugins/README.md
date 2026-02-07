@@ -48,32 +48,32 @@ src/plugins/
 ## 実装例
 
 ```ts
-import type { Client } from 'discord.js';
-import type { PluginManifest } from '../manifest.types';
+import type { Client } from "discord.js";
+import type { PluginManifest } from "../manifest.types";
 
 const manifest: PluginManifest = {
-  id: 'sample-plugin',
+  id: "sample-plugin",
   tools: [
     {
-      name: 'sample_action',
-      description: 'サンプル処理',
+      name: "sample_action",
+      description: "サンプル処理",
       arguments: [
-        { name: 'text', description: '入力テキスト', required: true }
-      ]
-    }
+        { name: "text", description: "入力テキスト", required: true },
+      ],
+    },
   ],
   handlers: {
     sample_action: async (args, context) => {
-      const text = typeof args.text === 'string' ? args.text : '';
+      const text = typeof args.text === "string" ? args.text : "";
       const guildId = context.guildId;
       const userId = context.userId;
-      if (!guildId || !userId) return 'サーバー内で実行してください';
+      if (!guildId || !userId) return "サーバー内で実行してください";
       return `ok: ${text}`;
-    }
+    },
   },
   start: (_client: Client) => {
     // 必要な場合のみ実装
-  }
+  },
 };
 
 export default manifest;
@@ -84,15 +84,15 @@ export default manifest;
 `/butler` や AI ツールを公開しない機能は、`start` のみ実装する
 
 ```ts
-import type { Client } from 'discord.js';
-import type { PluginManifest } from '../manifest.types';
-import { NotifyVoiceChannelService } from './notify-voice-channel.service';
+import type { Client } from "discord.js";
+import type { PluginManifest } from "../manifest.types";
+import { NotifyVoiceChannelService } from "./notify-voice-channel.service";
 
 const manifest: PluginManifest = {
-  id: 'notify-voice-channel',
+  id: "notify-voice-channel",
   start: (client: Client) => {
     new NotifyVoiceChannelService(client).run();
-  }
+  },
 };
 
 export default manifest;
@@ -103,12 +103,9 @@ export default manifest;
 `src/plugins/index.ts` の `plugins` 配列に追加する
 
 ```ts
-import samplePlugin from './sample-plugin/manifest';
+import samplePlugin from "./sample-plugin/manifest";
 
-const plugins: PluginManifest[] = [
-  eventReminder,
-  samplePlugin
-];
+const plugins: PluginManifest[] = [eventReminder, samplePlugin];
 ```
 
 ## 実装時の注意

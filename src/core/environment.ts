@@ -8,5 +8,5 @@ export const {
   AI_MODEL,
   AI_PROMPT_APPEND,
   AI_API_KEY,
-  AI_CLOUDFLARE_ACCOUNT_ID
+  AI_CLOUDFLARE_ACCOUNT_ID,
 } = process.env;

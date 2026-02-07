@@ -1,4 +1,4 @@
-import type { Message, MessageCreateOptions } from 'discord.js';
+import type { Message, MessageCreateOptions } from "discord.js";
 
 /**
  * チャンネルにメッセージを送信する共通ユーティリティ関数
@@ -8,10 +8,14 @@ import type { Message, MessageCreateOptions } from 'discord.js';
  * @returns 送信されたメッセージのPromise、またはチャンネルが送信をサポートしていない場合はnull
  */
 export function sendToChannel(
-  channel: Message['channel'],
-  content: string | MessageCreateOptions
+  channel: Message["channel"],
+  content: string | MessageCreateOptions,
 ): Promise<Message> | null {
-  type SendableChannel = Message['channel'] & { send: (content: string | MessageCreateOptions) => Promise<Message> };
-  if (!('send' in channel)) { return null; }
+  type SendableChannel = Message["channel"] & {
+    send: (content: string | MessageCreateOptions) => Promise<Message>;
+  };
+  if (!("send" in channel)) {
+    return null;
+  }
   return (channel as SendableChannel).send(content);
 }

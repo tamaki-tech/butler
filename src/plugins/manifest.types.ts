@@ -1,5 +1,5 @@
-import type { Client } from 'discord.js';
-import type { SlashCommandToolDefinition } from '../runtime/commands/slash-command-tools';
+import type { Client } from "discord.js";
+import type { SlashCommandToolDefinition } from "../runtime/commands/slash-command-tools";
 
 /**
  * ツール実行時にフレームワーク側から渡される実行コンテキスト。
@@ -21,7 +21,7 @@ export type PluginToolContext = {
  */
 export type PluginToolHandler = (
   args: Record<string, unknown>,
-  context: PluginToolContext
+  context: PluginToolContext,
 ) => Promise<string>;
 
 /**

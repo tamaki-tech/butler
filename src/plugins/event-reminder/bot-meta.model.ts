@@ -1,5 +1,5 @@
 /** リマインドタイミングの有効値。 */
-export type ReminderTiming = '7d' | '3d' | '1d' | '0d';
+export type ReminderTiming = "7d" | "3d" | "1d" | "0d";
 
 /** イベントdescriptionに埋め込むBotMeta JSON構造。 */
 export interface BotMeta {
@@ -12,32 +12,37 @@ export interface BotMeta {
 }
 
 /** BotMetaマーカー定数。 */
-export const BOT_META_START = '<!-- BOT_META_START -->';
-export const BOT_META_END = '<!-- BOT_META_END -->';
-export const BOT_IDENTIFIER = 'butler';
+export const BOT_META_START = "<!-- BOT_META_START -->";
+export const BOT_META_END = "<!-- BOT_META_END -->";
+export const BOT_IDENTIFIER = "butler";
 export const BOT_META_VERSION = 1;
 
 /** BotMetaブロックを抽出する正規表現。 */
 const BOT_META_REGEX = /<!-- BOT_META_START -->([\s\S]*?)<!-- BOT_META_END -->/;
 
 /** 有効なリマインドタイミングの一覧。 */
-const VALID_TIMINGS: ReminderTiming[] = ['7d', '3d', '1d', '0d'];
+const VALID_TIMINGS: ReminderTiming[] = ["7d", "3d", "1d", "0d"];
 
 /**
  * オブジェクトがBotMeta構造として有効かを検証する。
  */
 function isValidBotMeta(obj: unknown): obj is BotMeta {
-  if (typeof obj !== 'object' || obj === null) return false;
+  if (typeof obj !== "object" || obj === null) return false;
   const meta = obj as Record<string, unknown>;
 
-  if (typeof meta.version !== 'number') return false;
-  if (typeof meta.managedBy !== 'string') return false;
-  if (typeof meta.createdBy !== 'string') return false;
+  if (typeof meta.version !== "number") return false;
+  if (typeof meta.managedBy !== "string") return false;
+  if (typeof meta.createdBy !== "string") return false;
   if (!Array.isArray(meta.participants)) return false;
-  if (!meta.participants.every(p => typeof p === 'string')) return false;
+  if (!meta.participants.every((p) => typeof p === "string")) return false;
   if (!Array.isArray(meta.remindTimings)) return false;
-  if (!meta.remindTimings.every(t => VALID_TIMINGS.includes(t as ReminderTiming))) return false;
-  if (typeof meta.notified !== 'object' || meta.notified === null) return false;
+  if (
+    !meta.remindTimings.every((t) =>
+      VALID_TIMINGS.includes(t as ReminderTiming),
+    )
+  )
+    return false;
+  if (typeof meta.notified !== "object" || meta.notified === null) return false;
 
   return true;
 }
@@ -55,7 +60,7 @@ export function parseBotMeta(description: string | null): BotMeta | null {
   try {
     const json = JSON.parse(match[1].trim());
     if (!isValidBotMeta(json)) {
-      console.warn('BotMeta: 無効な構造');
+      console.warn("BotMeta: 無効な構造");
       return null;
     }
     if (json.managedBy !== BOT_IDENTIFIER) {
@@ -63,7 +68,7 @@ export function parseBotMeta(description: string | null): BotMeta | null {
     }
     return json;
   } catch (e) {
-    console.warn('BotMeta: JSONパース失敗:', e);
+    console.warn("BotMeta: JSONパース失敗:", e);
     return null;
   }
 }
@@ -80,7 +85,10 @@ export function serializeBotMeta(meta: BotMeta): string {
  * descriptionのBotMetaブロックを新しいmetaで置換する。
  * BotMetaが存在しない場合は末尾に追加する。
  */
-export function updateDescriptionWithMeta(description: string | null, meta: BotMeta): string {
+export function updateDescriptionWithMeta(
+  description: string | null,
+  meta: BotMeta,
+): string {
   const serialized = serializeBotMeta(meta);
 
   if (!description) {
@@ -100,13 +108,13 @@ export function updateDescriptionWithMeta(description: string | null, meta: BotM
 export function createDefaultBotMeta(
   creatorUserId: string,
   participants: string[],
-  timings: ReminderTiming[] = ['7d', '3d', '1d', '0d']
+  timings: ReminderTiming[] = ["7d", "3d", "1d", "0d"],
 ): BotMeta {
   const notified: Record<ReminderTiming, boolean> = {
-    '7d': false,
-    '3d': false,
-    '1d': false,
-    '0d': false
+    "7d": false,
+    "3d": false,
+    "1d": false,
+    "0d": false,
   };
 
   return {
@@ -115,7 +123,7 @@ export function createDefaultBotMeta(
     createdBy: creatorUserId,
     participants,
     remindTimings: timings,
-    notified
+    notified,
   };
 }
 
@@ -123,6 +131,6 @@ export function createDefaultBotMeta(
  * descriptionからBotMetaブロックを除去したテキストを返す。
  */
 export function stripBotMeta(description: string | null): string {
-  if (!description) return '';
-  return description.replace(BOT_META_REGEX, '').trim();
+  if (!description) return "";
+  return description.replace(BOT_META_REGEX, "").trim();
 }

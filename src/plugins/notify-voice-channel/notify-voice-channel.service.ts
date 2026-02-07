@@ -1,6 +1,6 @@
-import { Client, TextChannel, VoiceState } from 'discord.js';
+import { Client, TextChannel, VoiceState } from "discord.js";
 
-import { NOTIFY_TEXT_CHANNEL_ID } from '../../core/environment';
+import { NOTIFY_TEXT_CHANNEL_ID } from "../../core/environment";
 
 /** 音声チャンネルへの通知を目的とした機能を提供するサービスクラス。 */
 export class NotifyVoiceChannelService {
@@ -8,7 +8,9 @@ export class NotifyVoiceChannelService {
 
   /** Clientからのイベント監視を開始する。 */
   run() {
-    this.client.on('voiceStateUpdate', (oldState, newState) => this.onVoiceStateUpdate(oldState, newState));
+    this.client.on("voiceStateUpdate", (oldState, newState) =>
+      this.onVoiceStateUpdate(oldState, newState),
+    );
     return this;
   }
 
@@ -17,10 +19,17 @@ export class NotifyVoiceChannelService {
    * `DISCORD_NOTIFY_CHANNEL_ID`の通知用チャンネルに通知する。
    */
   private onVoiceStateUpdate(oldState: VoiceState, newState: VoiceState) {
-    if (oldState.channelId == null && newState.channelId && newState.member && newState.channel?.members.size === 1) {
-      const notifyChannel = this.client.channels.cache.get(NOTIFY_TEXT_CHANNEL_ID || '') as TextChannel | undefined;
-      const name          = newState.member.nickname || newState.member.displayName;
-      const text          = `:loudspeaker: **${name}** が **${newState.channel.name}** でボイスチャンネルを開始しました`;
+    if (
+      oldState.channelId == null &&
+      newState.channelId &&
+      newState.member &&
+      newState.channel?.members.size === 1
+    ) {
+      const notifyChannel = this.client.channels.cache.get(
+        NOTIFY_TEXT_CHANNEL_ID || "",
+      ) as TextChannel | undefined;
+      const name = newState.member.nickname || newState.member.displayName;
+      const text = `:loudspeaker: **${name}** が **${newState.channel.name}** でボイスチャンネルを開始しました`;
       notifyChannel?.send(text);
     }
   }

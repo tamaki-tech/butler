@@ -1,5 +1,5 @@
-import type { Message } from 'discord.js';
-import type { AiMessage } from '../../core/ai-provider';
+import type { Message } from "discord.js";
+import type { AiMessage } from "../../core/ai-provider";
 
 /** AIとの会話コンテキストをメモリ上で保持するサービス。 */
 export class AiConversationService {
@@ -25,7 +25,9 @@ export class AiConversationService {
    */
   getSessionIdFromReply(message: Message): string | null {
     const replyId = message.reference?.messageId;
-    if (!replyId) { return null; }
+    if (!replyId) {
+      return null;
+    }
     const sessionId = this.messageToSession.get(replyId) ?? null;
     if (sessionId) {
       this.touchSession(sessionId);
@@ -47,7 +49,11 @@ export class AiConversationService {
    * @param messages 初期メッセージ
    * @param messageIds セッションに紐づくメッセージID
    */
-  ensureSession(sessionId: string, messages: AiMessage[], messageIds: string[] = []) {
+  ensureSession(
+    sessionId: string,
+    messages: AiMessage[],
+    messageIds: string[] = [],
+  ) {
     this.sessions.set(sessionId, this.trimMessages(messages));
     for (const messageId of messageIds) {
       this.mapMessageToSession(messageId, sessionId);
@@ -62,7 +68,7 @@ export class AiConversationService {
    * @param content 発言内容
    */
   addUserMessage(sessionId: string, content: string) {
-    this.appendMessage(sessionId, { role: 'user', content });
+    this.appendMessage(sessionId, { role: "user", content });
   }
 
   /**
@@ -71,8 +77,12 @@ export class AiConversationService {
    * @param content 発言内容
    * @param replyMessageId 返信メッセージID
    */
-  addAssistantMessage(sessionId: string, content: string, replyMessageId: string) {
-    this.appendMessage(sessionId, { role: 'assistant', content });
+  addAssistantMessage(
+    sessionId: string,
+    content: string,
+    replyMessageId: string,
+  ) {
+    this.appendMessage(sessionId, { role: "assistant", content });
     this.mapMessageToSession(replyMessageId, sessionId);
   }
 
@@ -117,7 +127,9 @@ export class AiConversationService {
   private evictIfNeeded() {
     while (this.sessionOrder.length > this.maxSessions) {
       const oldest = this.sessionOrder.shift();
-      if (!oldest) { return; }
+      if (!oldest) {
+        return;
+      }
       this.sessions.delete(oldest);
       const messageIds = this.sessionToMessageIds.get(oldest);
       if (messageIds) {
@@ -134,7 +146,9 @@ export class AiConversationService {
    * @param messages メッセージ一覧
    */
   private trimMessages(messages: AiMessage[]): AiMessage[] {
-    if (messages.length <= this.maxMessages) { return messages; }
+    if (messages.length <= this.maxMessages) {
+      return messages;
+    }
     return messages.slice(messages.length - this.maxMessages);
   }
 

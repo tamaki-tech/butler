@@ -1,5 +1,5 @@
-import type { AiToolCall, AiToolDefinition } from '../../core/ai-provider';
-import { DEBUG_TOOL_CALLS } from '../../core/environment';
+import type { AiToolCall, AiToolDefinition } from "../../core/ai-provider";
+import { DEBUG_TOOL_CALLS } from "../../core/environment";
 
 /**
  * /butler と AI が共通利用する「ツールレジストリ」。
@@ -36,13 +36,14 @@ type RegisterSlashCommandToolOptions = {
 /** スラッシュコマンドツールの実行関数。 */
 export type SlashCommandToolHandler = (
   args: Record<string, unknown>,
-  context?: SlashCommandToolContext
+  context?: SlashCommandToolContext,
 ) => Promise<string>;
 
 const TOOL_DEFINITIONS: SlashCommandToolDefinition[] = [];
 const TOOL_HANDLERS = new Map<string, SlashCommandToolHandler>();
 const TOOL_AI_HINTS = new Map<string, string>();
-const isDebugToolCallsEnabled = DEBUG_TOOL_CALLS === '1' || DEBUG_TOOL_CALLS === 'true';
+const isDebugToolCallsEnabled =
+  DEBUG_TOOL_CALLS === "1" || DEBUG_TOOL_CALLS === "true";
 
 const toDebugText = (value: unknown): string => {
   try {
@@ -67,9 +68,11 @@ export const getSlashCommandTools = (): SlashCommandToolDefinition[] => {
 export const registerSlashCommandTool = (
   tool: SlashCommandToolDefinition,
   handler?: SlashCommandToolHandler,
-  options?: RegisterSlashCommandToolOptions
+  options?: RegisterSlashCommandToolOptions,
 ): void => {
-  const existingIndex = TOOL_DEFINITIONS.findIndex(item => item.name === tool.name);
+  const existingIndex = TOOL_DEFINITIONS.findIndex(
+    (item) => item.name === tool.name,
+  );
   if (existingIndex >= 0) {
     TOOL_DEFINITIONS.splice(existingIndex, 1, tool);
   } else {
@@ -90,7 +93,7 @@ export const registerSlashCommandTool = (
  */
 export const registerSlashCommandToolHandler = (
   name: string,
-  handler: SlashCommandToolHandler
+  handler: SlashCommandToolHandler,
 ): void => {
   TOOL_HANDLERS.set(name, handler);
 };
@@ -99,22 +102,23 @@ export const registerSlashCommandToolHandler = (
  * スラッシュコマンド定義をAIツール定義に変換する。
  */
 export const getSlashCommandAiTools = (): AiToolDefinition[] => {
-  return getSlashCommandTools().map(tool => ({
+  return getSlashCommandTools().map((tool) => ({
     name: tool.name,
     description: TOOL_AI_HINTS.has(tool.name)
       ? `${tool.description}\nAI方針: ${TOOL_AI_HINTS.get(tool.name)}`
       : tool.description,
     parameters: {
-      type: 'object',
-      properties: tool.arguments.reduce<Record<string, { type: 'string'; description?: string }>>(
-        (acc, arg) => {
-          acc[arg.name] = { type: 'string', description: arg.description };
-          return acc;
-        },
-        {}
-      ),
-      required: tool.arguments.filter(arg => arg.required).map(arg => arg.name)
-    }
+      type: "object",
+      properties: tool.arguments.reduce<
+        Record<string, { type: "string"; description?: string }>
+      >((acc, arg) => {
+        acc[arg.name] = { type: "string", description: arg.description };
+        return acc;
+      }, {}),
+      required: tool.arguments
+        .filter((arg) => arg.required)
+        .map((arg) => arg.name),
+    },
   }));
 };
 
@@ -125,11 +129,11 @@ export const getSlashCommandAiTools = (): AiToolDefinition[] => {
  */
 export const executeSlashCommandTool = async (
   call: AiToolCall,
-  context: SlashCommandToolContext = {}
+  context: SlashCommandToolContext = {},
 ): Promise<string> => {
   if (isDebugToolCallsEnabled) {
     console.log(
-      `[tool:request] name=${call.name} args=${toDebugText(call.arguments)} context=${toDebugText(context)}`
+      `[tool:request] name=${call.name} args=${toDebugText(call.arguments)} context=${toDebugText(context)}`,
     );
   }
 
@@ -144,12 +148,17 @@ export const executeSlashCommandTool = async (
   try {
     const result = await handler(call.arguments, context);
     if (isDebugToolCallsEnabled) {
-      console.log(`[tool:response] name=${call.name} result=${toDebugText(result)}`);
+      console.log(
+        `[tool:response] name=${call.name} result=${toDebugText(result)}`,
+      );
     }
     return result;
   } catch (error) {
     if (isDebugToolCallsEnabled) {
-      const message = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+      const message =
+        error instanceof Error
+          ? `${error.name}: ${error.message}`
+          : String(error);
       console.error(`[tool:error] name=${call.name} error=${message}`);
     }
     throw error;

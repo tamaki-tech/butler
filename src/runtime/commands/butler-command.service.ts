@@ -1,8 +1,8 @@
-import type { ChatInputCommandInteraction, Client } from 'discord.js';
+import type { ChatInputCommandInteraction, Client } from "discord.js";
 import {
   executeSlashCommandTool,
-  getSlashCommandTools
-} from './slash-command-tools';
+  getSlashCommandTools,
+} from "./slash-command-tools";
 
 /** /butler スラッシュコマンドのルーティングを担当するサービス。 */
 export class ButlerCommandService {
@@ -10,22 +10,28 @@ export class ButlerCommandService {
 
   /** Clientからのイベント監視を開始する。 */
   run() {
-    this.client.on('interactionCreate', interaction => {
-      if (!interaction.isChatInputCommand()) { return; }
-      if (interaction.commandName !== 'butler') { return; }
+    this.client.on("interactionCreate", (interaction) => {
+      if (!interaction.isChatInputCommand()) {
+        return;
+      }
+      if (interaction.commandName !== "butler") {
+        return;
+      }
       this.handle(interaction);
     });
   }
 
   /** /butler コマンドを処理する。 */
-  private async handle(interaction: ChatInputCommandInteraction): Promise<void> {
+  private async handle(
+    interaction: ChatInputCommandInteraction,
+  ): Promise<void> {
     const toolName = interaction.options.getSubcommand();
-    const tool = getSlashCommandTools().find(item => item.name === toolName);
+    const tool = getSlashCommandTools().find((item) => item.name === toolName);
 
     if (!tool) {
       await interaction.reply({
         content: `未対応のコマンドです: ${toolName}`,
-        ephemeral: true
+        ephemeral: true,
       });
       return;
     }
@@ -40,12 +46,15 @@ export class ButlerCommandService {
 
     const result = await executeSlashCommandTool(
       { name: toolName, arguments: args },
-      { guildId: interaction.guildId ?? undefined, userId: interaction.user.id }
+      {
+        guildId: interaction.guildId ?? undefined,
+        userId: interaction.user.id,
+      },
     );
 
     await interaction.reply({
       content: result,
-      ephemeral: false
+      ephemeral: false,
     });
   }
 }

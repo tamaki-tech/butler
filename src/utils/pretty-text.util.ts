@@ -1,7 +1,8 @@
 /** いい感じに整形された文を作成するヘルパー関数。 */
 export class PrettyText {
   /** Discordのコード記法(バッククォート3つで囲み、ファイルタイプを指定する記述)を作成しやすくする関数。 */
-  static code = (value: string, type = 'md') => `\`\`\`${type}\n${value.trim()}\n\`\`\``;
+  static code = (value: string, type = "md") =>
+    `\`\`\`${type}\n${value.trim()}\n\`\`\``;
   /**
    * 整形されたヘルプのリストを作成する。
    * @param desc        リストの概要/タイトル
@@ -12,9 +13,9 @@ export class PrettyText {
     const padEndCount = Math.max(...items.map(([key, _]) => key.length));
     const body = items
       .map(([key, value]) => `_**\`${key.padEnd(padEndCount)}\`**_ - ${value}`)
-      .join('\n');
-    return desc + '\n\n' + body;
-  }
+      .join("\n");
+    return desc + "\n\n" + body;
+  };
   /**
    * 整形されたマークダウンのリストを作成する。
    * @param desc        リストの概要/タイトル
@@ -24,10 +25,10 @@ export class PrettyText {
   static markdownList = (desc: string, ...items: [string, string][]) => {
     const body = items
       .map(([key, value]) => {
-        const detail = value ? `\n${PrettyText.code(value, 'md')}` : '\n';
+        const detail = value ? `\n${PrettyText.code(value, "md")}` : "\n";
         return `# **${key}**${detail}`;
       })
-      .join('\n');
-    return desc ? desc + '\n\n' + body : body;
-  }
+      .join("\n");
+    return desc ? desc + "\n\n" + body : body;
+  };
 }

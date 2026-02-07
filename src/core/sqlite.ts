@@ -1,13 +1,14 @@
-import fs from 'fs';
-import path from 'path';
-import Database from 'better-sqlite3';
-import type { Database as SqliteDb } from 'better-sqlite3';
+import fs from "fs";
+import path from "path";
+import Database from "better-sqlite3";
+import type { Database as SqliteDb } from "better-sqlite3";
 
 /** プロセスごとのシングルトン。 Web/workerは別プロセスで動作するため、それぞれ独自の接続を持つ。 */
 let db: SqliteDb | null = null;
 
 /** 実行ディレクトリ配下にDBを固定する。 */
-const resolveSqlitePath = () => path.resolve(process.cwd(), 'data/butler.sqlite');
+const resolveSqlitePath = () =>
+  path.resolve(process.cwd(), "data/butler.sqlite");
 
 /** worker/webのストアやAPIがDBアクセスするときの入口。初回のみ初期化して使い回す。 */
 export const getSqliteDb = (): SqliteDb => {
@@ -15,9 +16,9 @@ export const getSqliteDb = (): SqliteDb => {
   const dbPath = resolveSqlitePath();
   fs.mkdirSync(path.dirname(dbPath), { recursive: true });
   db = new Database(dbPath);
-  db.pragma('journal_mode = WAL');
-  db.pragma('busy_timeout = 5000');
-  db.exec('');
+  db.pragma("journal_mode = WAL");
+  db.pragma("busy_timeout = 5000");
+  db.exec("");
   return db;
 };
 
@@ -28,7 +29,7 @@ export const getSqliteDb = (): SqliteDb => {
     db.close();
     db = null;
   };
-  process.once('exit', closeSqliteDb);
-  process.once('SIGINT', closeSqliteDb);
-  process.once('SIGTERM', closeSqliteDb);
+  process.once("exit", closeSqliteDb);
+  process.once("SIGINT", closeSqliteDb);
+  process.once("SIGTERM", closeSqliteDb);
 })();

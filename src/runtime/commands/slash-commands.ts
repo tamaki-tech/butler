@@ -1,20 +1,21 @@
-import { Client, SlashCommandBuilder } from 'discord.js';
-import { DISCORD_GUILD_ID } from '../../core/environment';
-import { getSlashCommandTools } from './slash-command-tools';
+import { Client, SlashCommandBuilder } from "discord.js";
+import { DISCORD_GUILD_ID } from "../../core/environment";
+import { getSlashCommandTools } from "./slash-command-tools";
 
 const buildSlashCommands = () => {
   const root = new SlashCommandBuilder()
-    .setName('butler')
-    .setDescription('butlerを呼び出す');
+    .setName("butler")
+    .setDescription("butlerを呼び出す");
 
   for (const tool of getSlashCommandTools()) {
-    root.addSubcommand(subcommand => {
-      subcommand
-        .setName(tool.name)
-        .setDescription(tool.description);
+    root.addSubcommand((subcommand) => {
+      subcommand.setName(tool.name).setDescription(tool.description);
       for (const arg of tool.arguments) {
-        subcommand.addStringOption(option =>
-          option.setName(arg.name).setDescription(arg.description).setRequired(arg.required)
+        subcommand.addStringOption((option) =>
+          option
+            .setName(arg.name)
+            .setDescription(arg.description)
+            .setRequired(arg.required),
         );
       }
       return subcommand;
@@ -29,7 +30,9 @@ const buildSlashCommands = () => {
  * @param client Discordクライアント
  */
 export async function registerSlashCommands(client: Client): Promise<void> {
-  if (!client.application) { return; }
+  if (!client.application) {
+    return;
+  }
   try {
     const slashCommands = buildSlashCommands();
     if (DISCORD_GUILD_ID) {
@@ -39,8 +42,8 @@ export async function registerSlashCommands(client: Client): Promise<void> {
       return;
     }
     await client.application.commands.set(slashCommands);
-    console.log('registered global commands');
+    console.log("registered global commands");
   } catch (error) {
-    console.error('failed to register slash commands', error);
+    console.error("failed to register slash commands", error);
   }
 }

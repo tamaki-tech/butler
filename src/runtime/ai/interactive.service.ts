@@ -1,36 +1,41 @@
-import type { Client, Message } from 'discord.js';
-import type { AiMessage } from '../../core/ai-provider';
+import type { Client, Message } from "discord.js";
+import type { AiMessage } from "../../core/ai-provider";
 
-import { AiAgentService } from './agent.service';
-import { AiConversationService } from './conversation.service';
+import { AiAgentService } from "./agent.service";
+import { AiConversationService } from "./conversation.service";
 
 /** BOTがメンションを受け取ったときの対話挙動を定義するサービスクラス。 */
 export class InteractiveService {
-  private readonly processingEmoji = '👀';
+  private readonly processingEmoji = "👀";
 
   constructor(
     private client: Client,
     private aiAgentService: AiAgentService,
-    private aiConversationService: AiConversationService
+    private aiConversationService: AiConversationService,
   ) {}
 
   /** Clientからのイベント監視を開始する。 */
   run() {
-    this.client.on('messageCreate', message => this.onMessage(message));
+    this.client.on("messageCreate", (message) => this.onMessage(message));
   }
 
   /** Messageから各処理を呼び出すFacade関数。 */
   private onMessage(message: Message) {
-    if (message.author.bot) { return; } // botの発言は無視
-    if (['@everyone', '@here'].some(key => message.content.includes(key))) { return; } // everyone/hereが含まれていたら無視
+    if (message.author.bot) {
+      return;
+    } // botの発言は無視
+    if (["@everyone", "@here"].some((key) => message.content.includes(key))) {
+      return;
+    } // everyone/hereが含まれていたら無視
 
-    const repliedSessionId = this.aiConversationService.getSessionIdFromReply(message);
+    const repliedSessionId =
+      this.aiConversationService.getSessionIdFromReply(message);
     if (repliedSessionId) {
       this.reply(message, repliedSessionId, false);
       return;
     }
 
-    if (message.mentions.has(this.client.user || '')) {
+    if (message.mentions.has(this.client.user || "")) {
       const sessionId = this.aiConversationService.createSession(message.id);
       this.reply(message, sessionId, true);
       return;
@@ -47,23 +52,38 @@ export class InteractiveService {
    * @param sessionId 会話セッションID
    * @param stripMention メンションを除去するか
    */
-  private async reply(message: Message, sessionId: string, stripMention: boolean) {
-    if (!message.channel.isTextBased()) { return; }
+  private async reply(
+    message: Message,
+    sessionId: string,
+    stripMention: boolean,
+  ) {
+    if (!message.channel.isTextBased()) {
+      return;
+    }
     const content = stripMention
       ? this.stripMention(message.content, this.client.user?.id)
       : message.content.trim();
 
-    if (!content) { return; }
+    if (!content) {
+      return;
+    }
 
-    const processingReaction = await this.addReactionSafely(message, this.processingEmoji);
+    const processingReaction = await this.addReactionSafely(
+      message,
+      this.processingEmoji,
+    );
     this.aiConversationService.addUserMessage(sessionId, content);
     const messages = this.buildContextMessages(sessionId);
     const text = await this.aiAgentService.reply(messages, {
       guildId: message.guildId ?? undefined,
-      userId: message.author.id
+      userId: message.author.id,
     });
     const replyMessage = await message.reply(text);
-    this.aiConversationService.addAssistantMessage(sessionId, text, replyMessage.id);
+    this.aiConversationService.addAssistantMessage(
+      sessionId,
+      text,
+      replyMessage.id,
+    );
     await this.removeReactionSafely(processingReaction);
   }
 
@@ -72,9 +92,14 @@ export class InteractiveService {
    * @param message 受信メッセージ
    */
   private async replyWithRehydration(message: Message) {
-    if (!message.channel.isTextBased()) { return; }
-    const { sessionId, messages, messageIds } = await this.rehydrateSessionFromReply(message);
-    if (!sessionId) { return; }
+    if (!message.channel.isTextBased()) {
+      return;
+    }
+    const { sessionId, messages, messageIds } =
+      await this.rehydrateSessionFromReply(message);
+    if (!sessionId) {
+      return;
+    }
     this.aiConversationService.ensureSession(sessionId, messages, messageIds);
     await this.reply(message, sessionId, false);
   }
@@ -89,7 +114,7 @@ export class InteractiveService {
     messageIds: string[];
   }> {
     const channel = message.channel;
-    if (!channel.isTextBased() || !('messages' in channel)) {
+    if (!channel.isTextBased() || !("messages" in channel)) {
       return { sessionId: null, messages: [], messageIds: [] };
     }
 
@@ -109,7 +134,9 @@ export class InteractiveService {
 
     while (currentId && chain.length < 20) {
       const fetched = await channel.messages.fetch(currentId).catch(() => null);
-      if (!fetched) { break; }
+      if (!fetched) {
+        break;
+      }
       chain.push(fetched);
       currentId = fetched.reference?.messageId;
     }
@@ -120,17 +147,23 @@ export class InteractiveService {
 
     const ordered = chain.reverse();
     const messages: AiMessage[] = ordered
-      .map((item): AiMessage => ({
-        role: item.author.bot ? 'assistant' : 'user',
-        content: item.author.bot
-          ? item.content.trim()
-          : this.stripMention(item.content, mentionId)
-      }))
+      .map(
+        (item): AiMessage => ({
+          role: item.author.bot ? "assistant" : "user",
+          content: item.author.bot
+            ? item.content.trim()
+            : this.stripMention(item.content, mentionId),
+        }),
+      )
       .filter((item): item is Extract<AiMessage, { content: string }> => {
-        return 'content' in item && typeof item.content === 'string' && item.content.trim().length > 0;
+        return (
+          "content" in item &&
+          typeof item.content === "string" &&
+          item.content.trim().length > 0
+        );
       });
 
-    const messageIds = ordered.map(item => item.id);
+    const messageIds = ordered.map((item) => item.id);
     const sessionId = ordered[0].id;
 
     return { sessionId, messages, messageIds };
@@ -150,9 +183,11 @@ export class InteractiveService {
    * @param mentionId botのユーザーID
    */
   private stripMention(content: string, mentionId?: string): string {
-    if (!mentionId) { return content; }
-    const pattern = new RegExp(`<@!?${mentionId}>`, 'g');
-    return content.replace(pattern, '').trim();
+    if (!mentionId) {
+      return content;
+    }
+    const pattern = new RegExp(`<@!?${mentionId}>`, "g");
+    return content.replace(pattern, "").trim();
   }
 
   /**
@@ -172,8 +207,12 @@ export class InteractiveService {
    * リアクションを削除する。 権限や失敗は握りつぶす。
    * @param reaction 削除対象のリアクション
    */
-  private async removeReactionSafely(reaction: Awaited<ReturnType<Message['react']>> | null) {
-    if (!reaction) { return; }
+  private async removeReactionSafely(
+    reaction: Awaited<ReturnType<Message["react"]>> | null,
+  ) {
+    if (!reaction) {
+      return;
+    }
     try {
       await reaction.remove();
     } catch {
